@@ -75,10 +75,7 @@ def predict_image(model, image_path):
     model.eval()
 
     # 图像预处理
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
+    transform = transforms.ToTensor()
 
     # 读取并处理图像
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -112,8 +109,8 @@ def main():
     test_data = torchvision.datasets.MNIST(root='./data/', train=False)
     
     train_loader = Data.DataLoader(dataset=train_data, batch_size=50, shuffle=True)
-    test_x = torch.unsqueeze(test_data.test_data, dim=1).type(torch.FloatTensor)[:2000] / 255
-    test_y = test_data.test_labels[:2000]
+    test_x = torch.unsqueeze(test_data.data, dim=1).type(torch.FloatTensor)[:2000] / 255
+    test_y = test_data.targets[:2000]
 
     cnn = CNN()
 
