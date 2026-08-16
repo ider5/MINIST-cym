@@ -1,50 +1,95 @@
-# MNIST 手写数字识别 CNN
+# MNIST Lab · 卷积神经网络教学实验
 
-这是一个基于 PyTorch 实现的卷积神经网络（CNN），用于识别 MNIST 手写数字。
+把原来的单文件 MNIST CNN，改成一套可讲、可看、可练、可改的教学实验。
 
-## 功能
+主线仍然是 **28×28 手写数字识别**，用它讲清数据划分、MLP vs CNN、训练循环、指标、过拟合、超参、可解释性与错误分析。
 
-*   **训练**：训练一个新的 CNN 模型并将其保存到 `cnn2.pkl`。
-*   **测试集预测**：加载预训练的模型，并在 MNIST 测试集上进行预测。
-*   **单张图片预测**：加载预训练的模型，并对用户提供的单张手写数字图片进行预测。
+## 你能做什么
+
+- **训练 / 预测**：兼容旧命令 `python main.py --mode train`，并提供 `python -m mnist_lab ...`
+- **看见训练**：损失曲线、混淆矩阵、误分类图册（全部写入 `outputs/`，不弹窗）
+- **看见卷积**：特征图、梯度显著性、Grad-CAM；NumPy 手写卷积对照 `nn.Conv2d`
+- **对比实验**：`mlp` / `cnn` / `cnn_dropout`，调节 lr、batch、epoch、weight_decay
+- **课件**：`notebooks/00`–`08`
+- **测验 + 练习**：`python -m mnist_lab quiz`；`exercises/` 由 pytest 批改
+- **实验室**：`streamlit run app/streamlit_app.py`
+
+旧权重文件名仍为 `cnn2.pkl`。`build_model("cnn")` 的结构与最初脚本一致，可以直接 `load_state_dict`。
 
 ## 安装
 
-1.  克隆或下载此项目。
-2.  安装所需的 Python 库：
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-## 使用方法
-
-通过命令行参数可以控制不同的功能模式。
-
-### 训练模型
-
-运行以下命令来训练一个新的模型：
-
 ```bash
-python main.py --mode train
+pip install -r requirements.txt
 ```
 
-训练完成后，模型将被保存为 `cnn2.pkl`。
-
-### 在测试集上预测
-
-使用预训练的模型在 MNIST 测试集上进行预测：
+需要 PyTorch CPU 版时：
 
 ```bash
-python main.py --mode predict_test
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
 ```
 
-### 预测您自己的图片
-
-您可以对自己提供的图片进行预测。请确保图片中的数字清晰，背景简洁。
+## 快速开始
 
 ```bash
-python main.py --mode predict --image_path /path/to/your/image.png
+# 列出课件
+python -m mnist_lab lesson
+
+# 合成数据短训（不下载 MNIST，适合无网 / CI）
+python -m mnist_lab train --toy --epochs 2 --model cnn
+
+# 有 MNIST 时的课上演示（subset 控制分钟级）
+python -m mnist_lab train --subset 2048 --epochs 2 --model cnn
+
+# 测试批次预测（保存网格图，不再 cv2.imshow）
+python -m mnist_lab predict-test --toy
+
+# 单张图片
+python -m mnist_lab predict --image-path your_digit.png
+
+# 评估 + 混淆矩阵
+python -m mnist_lab evaluate --toy --split test
+
+# 导出 Grad-CAM
+python -m mnist_lab visualize --kind gradcam --toy
+
+# 测验（非交互：准备 JSON 答案）
+python -m mnist_lab quiz
 ```
 
-将 `/path/to/your/image.png` 替换为您的图片路径。
+兼容入口：
+
+```bash
+python main.py --mode train --toy
+python main.py --mode predict_test --toy
+python main.py --mode predict --image_path your_digit.png
+```
+
+交互实验室：
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+## 目录
+
+```
+mnist_lab/          教学代码包（中文注释）
+app/streamlit_app.py  实验室
+notebooks/          00–08 课件
+exercises/          学生填空；solutions/ 为参考答案
+tests/              快测，只用 toy / 手工张量
+docs/curriculum.md  课程大纲
+```
+
+## 运行测试
+
+```bash
+pytest
+```
+
+测试默认 **不下载 MNIST、不跑全量训练**。
+
+## 课程大纲
+
+见 [docs/curriculum.md](docs/curriculum.md)。

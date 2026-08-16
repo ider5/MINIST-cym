@@ -1,0 +1,124 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "MNIST 一张图的张量形状通常是？",
+      "choices": {
+        "A": "[3, 224, 224]",
+        "B": "[1, 28, 28]",
+        "C": "[28, 28, 3]",
+        "D": "[10]"
+      },
+      "answer": "B",
+      "explanation": "灰度图、边长 28，通道在前时为 [1, 28, 28]。"
+    },
+    {
+      "id": "q2",
+      "prompt": "交叉熵损失的输入 logits 一般经过什么运算再与 one-hot / 类别下标比较？",
+      "choices": {
+        "A": "ReLU",
+        "B": "最大池化",
+        "C": "Softmax（或 log-softmax）",
+        "D": "BatchNorm"
+      },
+      "answer": "C",
+      "explanation": "CrossEntropyLoss 内部是 log-softmax + NLL，把 logits 变成类别分布。"
+    },
+    {
+      "id": "q3",
+      "prompt": "CNN 相对 MLP 更适合图像，主要是因为？",
+      "choices": {
+        "A": "参数一定更多",
+        "B": "局部连接与权值共享带来平移归纳偏置",
+        "C": "不能过拟合",
+        "D": "不需要非线性"
+      },
+      "answer": "B",
+      "explanation": "卷积核在空间上滑动，同一模式只学一套权重。"
+    },
+    {
+      "id": "q4",
+      "prompt": "验证损失上升而训练损失继续下降，通常说明？",
+      "choices": {
+        "A": "欠拟合",
+        "B": "学习率过小",
+        "C": "过拟合",
+        "D": "数据增强过强"
+      },
+      "answer": "C",
+      "explanation": "模型在记训练集，泛化变差。"
+    },
+    {
+      "id": "q5",
+      "prompt": "MaxPool2d(kernel_size=2) 对 28×28 特征图的空间尺寸通常变成？",
+      "choices": {
+        "A": "28×28",
+        "B": "14×14",
+        "C": "7×7",
+        "D": "56×56"
+      },
+      "answer": "B",
+      "explanation": "默认 stride=kernel_size=2，长宽各减半。"
+    },
+    {
+      "id": "q6",
+      "prompt": "Dropout 主要在哪个阶段起作用？",
+      "choices": {
+        "A": "仅推理",
+        "B": "训练时随机屏蔽激活，推理时关闭",
+        "C": "优化器里替换 Adam",
+        "D": "只改变学习率"
+      },
+      "answer": "B",
+      "explanation": "model.train() 时丢弃，model.eval() 时用全连接的缩放期望。"
+    },
+    {
+      "id": "q7",
+      "prompt": "混淆矩阵第 i 行第 j 列的含义是？",
+      "choices": {
+        "A": "真实为 i、预测为 j 的样本数",
+        "B": "真实为 j、预测为 i 的样本数",
+        "C": "精确率",
+        "D": "学习率"
+      },
+      "answer": "A",
+      "explanation": "本实验约定行=真实，列=预测。"
+    },
+    {
+      "id": "q8",
+      "prompt": "Grad-CAM 热力图高亮的是？",
+      "choices": {
+        "A": "随机噪声",
+        "B": "对当前类别决策贡献大的空间区域",
+        "C": "优化器动量",
+        "D": "验证集大小"
+      },
+      "answer": "B",
+      "explanation": "用最后一层卷积的梯度加权激活，再上采样回输入尺寸。"
+    },
+    {
+      "id": "q9",
+      "prompt": "PyTorch 的 conv2d 实际计算的是？",
+      "choices": {
+        "A": "翻转核后的数学卷积",
+        "B": "不翻转核的互相关",
+        "C": "只做池化",
+        "D": "傅里叶变换"
+      },
+      "answer": "B",
+      "explanation": "深度学习框架里的 conv 几乎都是 cross-correlation。"
+    },
+    {
+      "id": "q10",
+      "prompt": "把学习率从 1e-3 一下子改成 10，最可能发生？",
+      "choices": {
+        "A": "损失平稳下降",
+        "B": "损失爆炸或震荡",
+        "C": "一定得到更高测试准确率",
+        "D": "不再需要非线性"
+      },
+      "answer": "B",
+      "explanation": "更新步长过大，参数跳出合理区域。"
+    }
+  ]
+}

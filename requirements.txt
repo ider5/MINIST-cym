@@ -1,3 +1,9 @@
-torch
-torchvision
-opencv-python
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24
+matplotlib>=3.7
+pillow>=10.0
+streamlit>=1.28
+jupyter>=1.0
+nbformat>=5.9
+pytest>=7.4

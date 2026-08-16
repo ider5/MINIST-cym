@@ -67,4 +67,8 @@ venv.bak/
 
 # Project specific files
 cnn2.pkl
+*.pt
 /data/
+runs/
+outputs/
+.ipynb_checkpoints/
