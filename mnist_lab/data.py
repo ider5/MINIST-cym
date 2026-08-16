@@ -131,14 +131,13 @@ def make_mnist_loaders(
     )
 
 
-def load_digit_image(image_path: str | Path) -> torch.Tensor:
+from mnist_lab.digit_io import prepare_digit_tensor
+
+
+def load_digit_image(image_path: str | Path, *, auto_invert: bool = True) -> torch.Tensor:
     """
     读入单张数字图 → [1, 1, 28, 28]。
-    若平均亮度偏高（白底黑字），自动反色以贴近 MNIST 的白字黑底。
+    若平均亮度偏高（白底黑字），默认自动反色以贴近 MNIST 的白字黑底。
     """
-    path = Path(image_path)
-    img = Image.open(path).convert("L").resize((IMAGE_SIZE, IMAGE_SIZE))
-    arr = np.asarray(img, dtype=np.float32) / 255.0
-    if float(arr.mean()) > 0.5:
-        arr = 1.0 - arr
-    return torch.from_numpy(arr).unsqueeze(0).unsqueeze(0)
+    img = Image.open(Path(image_path)).convert("L")
+    return prepare_digit_tensor(img, auto_invert=auto_invert)
