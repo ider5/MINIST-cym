@@ -174,11 +174,30 @@ def page_xai():
     c2.image(str(save_heatmap(x[0], saliency(model, x), ROOT / "outputs" / "lab_sal.png", "saliency")))
 
 
+def _sketch_pad() -> np.ndarray:
+    """28×28 点涂画板，白字黑底，无需额外依赖。"""
+    if "sketch" not in st.session_state:
+        st.session_state.sketch = np.zeros((28, 28), dtype=np.float32)
+    c1, c2, c3 = st.columns(3)
+    px = c1.slider("笔尖 x", 0, 27, 14)
+    py = c2.slider("笔尖 y", 0, 27, 14)
+    rad = c3.slider("半径", 1, 4, 2)
+    b1, b2 = st.columns(2)
+    if b1.button("点一笔"):
+        yy, xx = np.ogrid[:28, :28]
+        mask = (xx - px) ** 2 + (yy - py) ** 2 <= rad**2
+        st.session_state.sketch = np.clip(st.session_state.sketch + mask.astype(np.float32), 0, 1)
+    if b2.button("清空画板"):
+        st.session_state.sketch = np.zeros((28, 28), dtype=np.float32)
+    st.image(st.session_state.sketch, caption="画板（MNIST 风格：白字黑底）", clamp=True, width=140)
+    return st.session_state.sketch
+
+
 def page_draw():
     st.header("手写 / 上传预测")
     st.markdown(
-        "用画图软件写一个数字并上传，或从 fixture 挑一张。"
-        "右侧会显示自动反色后的 28×28、softmax 条形图和 Grad-CAM。"
+        "三种输入：画板点涂、上传图片、或从 fixture 挑一张。"
+        "会显示自动反色后的 28×28、softmax 条形图和 Grad-CAM。"
         "没有自己训的模型时，使用 `checkpoints/cnn_cpu.pt`（小样本短训，不是 SOTA）。"
     )
     model = st.session_state.get("model") or _load_pretrained()
@@ -186,23 +205,32 @@ def page_draw():
         st.error("找不到权重。")
         return
     auto_invert = st.checkbox("白底自动反色（建议开启）", value=True)
-    uploaded = st.file_uploader("上传图片", type=["png", "jpg", "jpeg"])
+    mode = st.radio("输入方式", ["画板", "上传", "fixture"], horizontal=True)
+    uploaded = None
+    camera = None
     x = None
-    caption = ""
-    if uploaded is not None:
-        pil = Image.open(uploaded).convert("L")
-        raw = prepare_digit_tensor(pil, auto_invert=False)
-        x = prepare_digit_tensor(pil, auto_invert=auto_invert)
-        caption = "上传图"
-        c1, c2 = st.columns(2)
-        c1.image(raw.squeeze().numpy(), caption="未反色", clamp=True, width=140)
-        c2.image(x.squeeze().numpy(), caption="送进模型", clamp=True, width=140)
+    if mode == "画板":
+        sketch = _sketch_pad()
+        if float(sketch.max()) > 0:
+            x = torch.from_numpy(sketch).unsqueeze(0).unsqueeze(0)
+    elif mode == "上传":
+        uploaded = st.file_uploader("上传图片", type=["png", "jpg", "jpeg"])
+        camera = st.camera_input("或用摄像头拍一张（可选）")
+        src = uploaded or camera
+        if src is not None:
+            pil = Image.open(src).convert("L")
+            raw = prepare_digit_tensor(pil, auto_invert=False)
+            x = prepare_digit_tensor(pil, auto_invert=auto_invert)
+            c1, c2 = st.columns(2)
+            c1.image(raw.squeeze().numpy(), caption="未反色", clamp=True, width=140)
+            c2.image(x.squeeze().numpy(), caption="送进模型", clamp=True, width=140)
     elif tiny_mnist_available():
         images, labels = load_tiny_mnist()
-        idx = st.slider("或选 fixture", 0, int(images.size(0)) - 1, 7)
+        idx = st.slider("选 fixture", 0, int(images.size(0)) - 1, 7)
         x = images[idx : idx + 1]
-        caption = f"fixture 标签 {int(labels[idx])}"
-        st.image(x.squeeze().numpy(), caption=caption, clamp=True, width=140)
+        st.image(x.squeeze().numpy(), caption=f"fixture 标签 {int(labels[idx])}", clamp=True, width=140)
+    else:
+        st.warning("没有 fixture。请改用画板或上传。")
     if x is None:
         return
     model.eval()

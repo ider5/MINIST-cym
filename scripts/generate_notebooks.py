@@ -57,6 +57,21 @@ def main() -> None:
                 "assert x.grad is not None\n"
                 "print('grad 均值', float(x.grad.abs().mean()))"
             ),
+            md("再看 logits 形状：线性层把拉平后的向量映到 10 类。"),
+            code(
+                "flat = torch.zeros(4, 1, 28, 28).view(4, -1)\n"
+                "print('flatten', tuple(flat.shape))\n"
+                "logits = torch.nn.Linear(784, 10)(flat)\n"
+                "print('logits', tuple(logits.shape))\n"
+                "assert logits.shape == (4, 10)"
+            ),
+            md("课内：`view` 之后仍能反传。"),
+            code(
+                "z = torch.randn(2, 1, 28, 28, requires_grad=True)\n"
+                "z.view(2, -1).sum().backward()\n"
+                "assert z.grad is not None and z.grad.shape == z.shape\n"
+                "print('view 未切断计算图')"
+            ),
             md(
                 "## 思考题\n"
                 "1. 把 `requires_grad=True` 去掉再 backward，报错信息里哪几个词最关键？\n"
@@ -93,6 +108,13 @@ def main() -> None:
             code(
                 "print(mnist_transforms(augment=False))\n"
                 "print(mnist_transforms(augment=True))"
+            ),
+            md("核对划分比例（100 条、val_ratio=0.2 → 80/20）。"),
+            code(
+                "ds = TensorDataset(torch.zeros(100, 1, 28, 28), torch.zeros(100, dtype=torch.long))\n"
+                "a, b = split_train_val(ds, val_ratio=0.2, seed=0)\n"
+                "print(len(a), len(b))\n"
+                "assert len(a) == 80 and len(b) == 20"
             ),
             md(
                 "## 思考题\n"
@@ -133,6 +155,22 @@ def main() -> None:
                 "print('mlp', nparams(mlp), 'cnn', nparams(cnn))\n"
                 "assert nparams(cnn) < nparams(mlp)"
             ),
+            md("互相关对照：NumPy 与 `F.conv2d` 应对齐。"),
+            code(
+                "import numpy as np, torch, torch.nn.functional as F\n"
+                "from mnist_lab.numpy_conv import conv2d_numpy\n"
+                "img = np.random.randn(1, 1, 8, 8).astype(np.float32)\n"
+                "ker = np.random.randn(1, 1, 3, 3).astype(np.float32)\n"
+                "d = np.max(np.abs(conv2d_numpy(img, ker, padding=1) - F.conv2d(torch.tensor(img), torch.tensor(ker), padding=1).numpy()))\n"
+                "print('diff', d)\n"
+                "assert d < 1e-4"
+            ),
+            md("Dropout CNN 前向形状仍是 `[B,10]`。"),
+            code(
+                "y = build_model('cnn_dropout')(torch.zeros(3, 1, 28, 28))\n"
+                "print(tuple(y.shape))\n"
+                "assert y.shape == (3, 10)"
+            ),
             md(
                 "## 思考题\n"
                 "1. 为什么 CNN 参数更少，却通常更适合图像？\n"
@@ -167,6 +205,13 @@ def main() -> None:
                 "payload = run_bug_case('forgot_zero_grad', 'runs/nb03_bug')\n"
                 "print(payload['highlight'])"
             ),
+            md("数一数：64 个样本、batch=16，一个 epoch 有几个 step？"),
+            code(
+                "n_steps = sum(1 for _ in tr)\n"
+                "print('steps / epoch', n_steps)\n"
+                "assert n_steps >= 1\n"
+                "print('history keys', sorted(result.history))"
+            ),
             md(
                 "## 思考题\n"
                 "1. 一个 epoch 里 step 的次数和什么有关？\n"
@@ -198,6 +243,18 @@ def main() -> None:
                 "r0 = per_class_report(cm)['0']['recall']\n"
                 "print('class0 recall', r0)\n"
                 "assert abs(r0 - 0.5) < 1e-9"
+            ),
+            md("再算类别 2 的 precision（预测为 2 的里面有多少真是 2）。"),
+            code(
+                "p2 = per_class_report(cm)['2']['precision']\n"
+                "print('class2 precision', p2)\n"
+                "assert abs(p2 - 1.0) < 1e-9"
+            ),
+            md("准确率手算：6 个里对了几个？"),
+            code(
+                "acc = accuracy(y_true, y_pred)\n"
+                "print(acc)\n"
+                "assert abs(acc - 4 / 6) < 1e-9"
             ),
             md(
                 "## 思考题\n"
@@ -231,6 +288,24 @@ def main() -> None:
                 "assert is_overfitting([1.0, 0.7], [1.0, 0.8]) is False\n"
                 "print('过拟合检测器工作正常')"
             ),
+            md("看训练/验证损失是否同向。"),
+            code(
+                "print('plain train', plain.history['train_loss'])\n"
+                "print('plain val_loss', plain.history['val_loss'])\n"
+                "assert len(plain.history['train_loss']) == len(plain.history['val_loss'])"
+            ),
+            md("Dropout 只在 train() 时随机丢。"),
+            code(
+                "m = build_model('cnn_dropout')\n"
+                "m.train()\n"
+                "a = m(torch.ones(1, 1, 28, 28)).detach()\n"
+                "b = m(torch.ones(1, 1, 28, 28)).detach()\n"
+                "m.eval()\n"
+                "c = m(torch.ones(1, 1, 28, 28)).detach()\n"
+                "d = m(torch.ones(1, 1, 28, 28)).detach()\n"
+                "print('eval 两次是否相同', torch.allclose(c, d))\n"
+                "assert torch.allclose(c, d)"
+            ),
             md(
                 "## 思考题\n"
                 "1. Dropout 在 `model.eval()` 时还随机丢神经元吗？\n"
@@ -263,6 +338,13 @@ def main() -> None:
                 "dirs = list(Path('runs').glob('mlp_lr*'))\n"
                 "print([p.name for p in dirs])\n"
                 "assert len(dirs) >= 3"
+            ),
+            md("读一份 history.json，确认字段。"),
+            code(
+                "import json\n"
+                "hist = json.loads(next(Path('runs').glob('mlp_lr*/history.json')).read_text())\n"
+                "print(hist['history'].keys())\n"
+                "assert 'val_acc' in hist['history']"
             ),
             md(
                 "## 思考题\n"
@@ -300,6 +382,12 @@ def main() -> None:
             code(
                 "assert 0.0 <= float(cam.min()) and float(cam.max()) <= 1.0 + 1e-6\n"
                 "print('CAM 范围合法')"
+            ),
+            md("特征图通道数应对上网络：conv1=16，conv2=32。"),
+            code(
+                "assert maps['conv1'].shape[1] == 16\n"
+                "assert maps['conv2'].shape[1] == 32\n"
+                "print('通道数正确')"
             ),
             md(
                 "## 思考题\n"
@@ -346,6 +434,15 @@ def main() -> None:
                 "p = run_bug_case('exploding_lr', 'runs/nb08_lr')\n"
                 "print(p['highlight'])\n"
                 "assert grade_diagnosis('exploding_lr', 'B')"
+            ),
+            md("ReLU + 2×2 池化的形状变化。"),
+            code(
+                "from mnist_lab.numpy_conv import relu_numpy, max_pool2d_numpy\n"
+                "a = np.array([[-1.0, 2.0], [3.0, -4.0]])\n"
+                "print('relu', relu_numpy(a))\n"
+                "p = max_pool2d_numpy(np.arange(16, dtype=float).reshape(4, 4), kernel_size=2)\n"
+                "print('pool', p.shape, p[0, 0])\n"
+                "assert p.shape == (2, 2) and p[0, 0] == 5"
             ),
             md(
                 "## 思考题\n"

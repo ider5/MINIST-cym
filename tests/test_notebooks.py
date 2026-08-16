@@ -24,3 +24,5 @@ def test_nine_lessons_are_full_sessions():
         assert "目标" in text, name
         assert "思考题" in text, name
         assert "会错的直觉" in text, name
+        n_code = sum(1 for c in cells if c.get("cell_type") == "code")
+        assert 3 <= n_code <= 6, (name, n_code)
