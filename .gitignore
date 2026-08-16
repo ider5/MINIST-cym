@@ -68,6 +68,9 @@ venv.bak/
 # Project specific files
 cnn2.pkl
 *.pt
+!checkpoints/*.pt
+!fixtures/*.pt
+checkpoints/_train_run/
 /data/
 runs/
 outputs/

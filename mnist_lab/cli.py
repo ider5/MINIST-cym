@@ -24,6 +24,8 @@ from mnist_lab.evaluate import evaluate
 from mnist_lab.interpret import feature_maps, gradcam, saliency
 from mnist_lab.models import build_model
 from mnist_lab.quiz import grade_answers, load_questions
+from mnist_lab.run_dirs import new_run_dir
+from mnist_lab.tiny_data import DEFAULT_CHECKPOINT, make_classroom_loaders
 from mnist_lab.train import train_model
 from mnist_lab.visualize import (
     save_confusion_matrix,
@@ -53,11 +55,18 @@ def _torch_load(path: Path):
         return torch.load(path, map_location="cpu")
 
 
+def _resolve_checkpoint(path: Path) -> Path:
+    if path.exists():
+        return path
+    if DEFAULT_CHECKPOINT.is_file():
+        return DEFAULT_CHECKPOINT
+    raise FileNotFoundError(
+        f"找不到权重 {path}，也没有 {DEFAULT_CHECKPOINT}。请先 train 或运行 scripts/build_fixtures.py"
+    )
+
+
 def _load_checkpoint(model: torch.nn.Module, path: Path) -> None:
-    if not path.exists():
-        raise FileNotFoundError(
-            f"找不到权重 {path}。请先运行: python -m mnist_lab train"
-        )
+    path = _resolve_checkpoint(path)
     model.load_state_dict(_torch_load(path))
 
 
@@ -68,7 +77,8 @@ def _add_data_flags(p: argparse.ArgumentParser) -> None:
     p.add_argument("--data-root", type=str, default="./data")
     p.add_argument("--download", action="store_true", default=True)
     p.add_argument("--no-download", action="store_false", dest="download")
-    p.add_argument("--toy", action="store_true", help="使用合成数据，不下载 MNIST")
+    p.add_argument("--toy", action="store_true", help="使用合成条纹数据（仅测 API）")
+    p.add_argument("--tiny", action="store_true", help="使用仓库 fixtures/mnist_tiny.pt")
 
 
 def cmd_train(args: argparse.Namespace) -> int:
@@ -87,17 +97,21 @@ def cmd_train(args: argparse.Namespace) -> int:
             n=max(args.subset or 128, 64),
             batch_size=args.batch_size,
         )
+        source = "toy"
+    elif getattr(args, "tiny", False):
+        from mnist_lab.tiny_data import make_tiny_loaders
+
+        train_loader, val_loader, _test = make_tiny_loaders(batch_size=args.batch_size)
+        source = "tiny"
     else:
-        train_loader, val_loader, _test = make_mnist_loaders(
+        (train_loader, val_loader, _test), source = make_classroom_loaders(
             batch_size=args.batch_size,
-            val_ratio=args.val_ratio,
             subset=args.subset,
             download=args.download,
             root=args.data_root,
-            augment=args.augment,
         )
     model = build_model(args.model)
-    run_dir = Path(args.run_dir) if args.run_dir else RUNS_DIR / args.model
+    run_dir = Path(args.run_dir) if args.run_dir else new_run_dir(args.model)
     result = train_model(
         model,
         train_loader,
@@ -111,7 +125,7 @@ def cmd_train(args: argparse.Namespace) -> int:
     )
     cwd_ckpt = Path(CHECKPOINT_NAME)
     torch.save(result.best_state, cwd_ckpt)
-    print(f"训练完成。最优验证准确率: {result.history['val_acc'][-1]:.4f}")
+    print(f"训练完成（数据={source}）。最优验证准确率: {result.history['val_acc'][-1]:.4f}")
     print(f"权重已写入 {run_dir / CHECKPOINT_NAME} 以及 ./{CHECKPOINT_NAME}")
     save_learning_curves(result.history, OUTPUT_DIR / "learning_curves.png")
     print(f"损失曲线: {OUTPUT_DIR / 'learning_curves.png'}")

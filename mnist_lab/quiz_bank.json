@@ -119,6 +119,42 @@
       },
       "answer": "B",
       "explanation": "更新步长过大，参数跳出合理区域。"
+    },
+    {
+      "id": "q11",
+      "prompt": "【读曲线】train_loss: 1.20 → 0.15，val_loss: 1.10 → 1.85。最像哪种情况？",
+      "choices": {
+        "A": "欠拟合，模型太简单",
+        "B": "过拟合，训练集在记答案、验证集变差",
+        "C": "学习率过大导致 NaN",
+        "D": "数据增强关掉了"
+      },
+      "answer": "B",
+      "explanation": "训练损失持续下降而验证损失回升，是过拟合的经典形状。"
+    },
+    {
+      "id": "q12",
+      "prompt": "【读曲线】train_loss 与 val_loss 都停在 2.3 附近（十分类随机水平），val_acc≈0.10。最像？",
+      "choices": {
+        "A": "过拟合",
+        "B": "标签打乱或完全没学到",
+        "C": "Dropout 正好",
+        "D": "测试集泄漏"
+      },
+      "answer": "B",
+      "explanation": "交叉熵随机猜约为 ln(10)≈2.3，准确率约 10%。"
+    },
+    {
+      "id": "q13",
+      "prompt": "课堂可视化为什么不要只用条纹 toy 数据讲 Grad-CAM？",
+      "choices": {
+        "A": "toy 不能算 loss",
+        "B": "条纹不像数字，热力图会教错「模型在看什么」",
+        "C": "toy 一定过拟合",
+        "D": "NumPy 不能处理 toy"
+      },
+      "answer": "B",
+      "explanation": "API 测试可以用 toy；讲可解释性请用 fixtures/mnist_tiny.pt 或完整 MNIST。"
     }
   ]
 }

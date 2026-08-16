@@ -10,9 +10,10 @@
 - **看见训练**：损失曲线、混淆矩阵、误分类图册（全部写入 `outputs/`，不弹窗）
 - **看见卷积**：特征图、梯度显著性、Grad-CAM；NumPy 手写卷积对照 `nn.Conv2d`
 - **对比实验**：`mlp` / `cnn` / `cnn_dropout`，调节 lr、batch、epoch、weight_decay
-- **课件**：`notebooks/00`–`08`
+- **课件**：`notebooks/00`–`08`（目标、形状账本、课内 assert、思考题）
 - **测验 + 练习**：`python -m mnist_lab quiz`；`exercises/` 由 pytest 批改
-- **实验室**：`streamlit run app/streamlit_app.py`
+- **实验室**：数据探查、短训、手写/上传预测、Grad-CAM、坏实验诊断、测验
+- **预置**：`fixtures/mnist_tiny.pt`（250 张真实数字）+ `checkpoints/cnn_cpu.pt`
 
 旧权重文件名仍为 `cnn2.pkl`。`build_model("cnn")` 的结构与最初脚本一致，可以直接 `load_state_dict`。
 
@@ -35,17 +36,20 @@ pip install -r requirements.txt
 # 列出课件
 python -m mnist_lab lesson
 
-# 合成数据短训（不下载 MNIST，适合无网 / CI）
+# 合成数据短训（不下载 MNIST，适合测 API；不要用来讲 Grad-CAM）
 python -m mnist_lab train --toy --epochs 2 --model cnn
+
+# 仓库内置真实小样本
+python -m mnist_lab train --tiny --epochs 3 --model cnn
+
+# 单张图片（若没有 cnn2.pkl，会回退到 checkpoints/cnn_cpu.pt）
+python -m mnist_lab predict --image-path your_digit.png
 
 # 有 MNIST 时的课上演示（subset 控制分钟级）
 python -m mnist_lab train --subset 2048 --epochs 2 --model cnn
 
 # 测试批次预测（保存网格图，不再 cv2.imshow）
 python -m mnist_lab predict-test --toy
-
-# 单张图片
-python -m mnist_lab predict --image-path your_digit.png
 
 # 评估 + 混淆矩阵
 python -m mnist_lab evaluate --toy --split test
@@ -77,9 +81,12 @@ streamlit run app/streamlit_app.py
 mnist_lab/          教学代码包（中文注释）
 app/streamlit_app.py  实验室
 notebooks/          00–08 课件
+fixtures/           真实数字小样本
+checkpoints/        CPU 预置 CNN 权重
 exercises/          学生填空；solutions/ 为参考答案
-tests/              快测，只用 toy / 手工张量
+tests/              快测（toy + fixture，不全量训练）
 docs/curriculum.md  课程大纲
+docs/teacher.md     90 分钟教师手册
 ```
 
 ## 运行测试

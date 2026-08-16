@@ -19,14 +19,14 @@
 ## 课堂活动
 
 1. 跑通 `python -m mnist_lab lesson`
-2. 用 `--toy` 在无网络环境短训
-3. `streamlit run app/streamlit_app.py` 调 lr / 模型
+2. 无网用 `--tiny` 或预置权重；`--toy` 只测 API，不要用来讲 Grad-CAM
+3. `streamlit run app/streamlit_app.py`：短训、手写预测、坏实验诊断
 4. 完成 `exercises/` 五题，`pytest tests/test_exercises.py`
 5. `python -m mnist_lab quiz`
 
 ## 建议课时
 
-- 实验课：按 00→08 顺序，每课配合实验室对应页面。
+- 实验课：按 00→08 顺序，每课配合实验室对应页面。节奏见 [teacher.md](teacher.md)。
 - 作业：练习 1–5；选做把自己的数字照片用 `predict` 识别（注意白底会自动反色）。
 
 ## 不会覆盖
