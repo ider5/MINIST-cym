@@ -1,102 +1,125 @@
 # MNIST Lab · 卷积神经网络教学实验
 
-把原来的单文件 MNIST CNN，改成一套可讲、可看、可练、可改的教学实验。
+用 **28×28 手写数字** 这一条线，把数据划分、MLP vs CNN、训练循环、指标、过拟合、超参、可解释性和错误分析讲完。面向第一次上 CNN 实验课的同学；默认 **CPU**，图都写到 `outputs/`，不弹窗。
 
-主线仍然是 **28×28 手写数字识别**，用它讲清数据划分、MLP vs CNN、训练循环、指标、过拟合、超参、可解释性与错误分析。
+预置了 250 张真实数字（`fixtures/mnist_tiny.pt`）和一份小权重（`checkpoints/cnn_cpu.pt`），装好依赖就能预测，不必先下完整 MNIST。
 
-## 你能做什么
+## 五分钟上手
 
-- **训练 / 预测**：兼容旧命令 `python main.py --mode train`，并提供 `python -m mnist_lab ...`
-- **看见训练**：损失曲线、混淆矩阵、误分类图册（全部写入 `outputs/`，不弹窗）
-- **看见卷积**：特征图、梯度显著性、Grad-CAM；NumPy 手写卷积对照 `nn.Conv2d`
-- **对比实验**：`mlp` / `cnn` / `cnn_dropout`，调节 lr、batch、epoch、weight_decay
-- **课件**：`notebooks/00`–`08`（目标、形状账本、课内 assert、思考题）
-- **测验 + 练习**：`python -m mnist_lab quiz`；`exercises/` 由 pytest 批改
-- **实验室**：数据探查、短训、手写/上传预测、Grad-CAM、坏实验诊断、测验
-- **预置**：`fixtures/mnist_tiny.pt`（250 张真实数字）+ `checkpoints/cnn_cpu.pt`
-
-旧权重文件名仍为 `cnn2.pkl`。`build_model("cnn")` 的结构与最初脚本一致，可以直接 `load_state_dict`。
-
-## 安装
+需要 Python 3.10+。
 
 ```bash
 pip install -r requirements.txt
+# 若上面装的是 GPU 版 PyTorch、而你只有 CPU：
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 ```
 
-需要 PyTorch CPU 版时：
+然后任选一条路：
 
-```bash
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements.txt
-```
+| 你想先做什么 | 命令 |
+| --- | --- |
+| 打开交互实验室（推荐） | `streamlit run app/streamlit_app.py` |
+| 立刻猜一张图 | `python -m mnist_lab predict --image-path your_digit.png` |
+| 按课顺序读 | `python -m mnist_lab lesson` 然后打开 `notebooks/00_tensors.ipynb` |
+| 自己短训一版 | `python -m mnist_lab train --tiny --epochs 3 --model cnn` |
 
-## 快速开始
+没有 `your_digit.png` 时，进实验室选「手写预测」：画板点涂、上传、摄像头或从 fixture 里挑一张。
 
-```bash
-# 列出课件
-python -m mnist_lab lesson
+## 三种数据，别用错
 
-# 合成数据短训（不下载 MNIST，适合测 API；不要用来讲 Grad-CAM）
-python -m mnist_lab train --toy --epochs 2 --model cnn
+| 开关 | 是什么 | 什么时候用 |
+| --- | --- | --- |
+| `--tiny`（默认课堂） | 仓库里的真实手写数字，250 张 | 无网上课、看 Grad-CAM、讲错例 |
+| 不加快捷开关 | 完整 MNIST（需下载） | 有网、想看更像样的准确率；可加 `--subset 2048` 控制时间 |
+| `--toy` | 合成**条纹**，不是数字 | 只给 `pytest` 和「坏实验」快速复现 |
 
-# 仓库内置真实小样本
-python -m mnist_lab train --tiny --epochs 3 --model cnn
+**不要用 `--toy` 讲特征图 / Grad-CAM。** 条纹热力图会让人以为模型在看横杠。
 
-# 单张图片（若没有 cnn2.pkl，会回退到 checkpoints/cnn_cpu.pt）
-python -m mnist_lab predict --image-path your_digit.png
+## 学习路径（00 → 08）
 
-# 有 MNIST 时的课上演示（subset 控制分钟级）
-python -m mnist_lab train --subset 2048 --epochs 2 --model cnn
+每课都有：目标、一个会错的直觉、带 `assert` 的代码格、三道思考题。
 
-# 测试批次预测（保存网格图，不再 cv2.imshow）
-python -m mnist_lab predict-test --toy
+| 课 | 笔记本 | 学完你能说出 |
+| --- | --- | --- |
+| 00 | [notebooks/00_tensors.ipynb](notebooks/00_tensors.ipynb) | 为什么是 `[B,1,28,28]`，`backward` 为什么要计算图 |
+| 01 | [notebooks/01_data.ipynb](notebooks/01_data.ipynb) | train / val / test 各自只能干什么 |
+| 02 | [notebooks/02_mlp_vs_cnn.ipynb](notebooks/02_mlp_vs_cnn.ipynb) | `[28×28] → 14×14 → 7×7 → 10` |
+| 03 | [notebooks/03_train_loop.ipynb](notebooks/03_train_loop.ipynb) | zero_grad → 前向 → loss → backward → step |
+| 04 | [notebooks/04_metrics.ipynb](notebooks/04_metrics.ipynb) | 混淆矩阵比准确率多告诉你什么 |
+| 05 | [notebooks/05_overfitting.ipynb](notebooks/05_overfitting.ipynb) | 训练变好、验证变差该怎么办 |
+| 06 | [notebooks/06_hyperparams.ipynb](notebooks/06_hyperparams.ipynb) | 一次只改一个量，结果在 `runs/` |
+| 07 | [notebooks/07_interpret.ipynb](notebooks/07_interpret.ipynb) | 特征图、saliency、Grad-CAM 的差别 |
+| 08 | [notebooks/08_error_analysis.ipynb](notebooks/08_error_analysis.ipynb) | 误分类图册 + 五种坏实验 |
 
-# 评估 + 混淆矩阵
-python -m mnist_lab evaluate --toy --split test
+完整大纲：[docs/curriculum.md](docs/curriculum.md) · 90 分钟课表：[docs/teacher.md](docs/teacher.md)
 
-# 导出 Grad-CAM
-python -m mnist_lab visualize --kind gradcam --toy
-
-# 测验（非交互：准备 JSON 答案）
-python -m mnist_lab quiz
-```
-
-兼容入口：
-
-```bash
-python main.py --mode train --toy
-python main.py --mode predict_test --toy
-python main.py --mode predict --image_path your_digit.png
-```
-
-交互实验室：
+## 实验室页面
 
 ```bash
 streamlit run app/streamlit_app.py
 ```
 
-## 目录
+数据探查 → 模型与训练 → 手写预测 → 评估 → 可解释性 → **坏实验诊断** → 超参对照 → 测验。
 
-```
-mnist_lab/          教学代码包（中文注释）
-app/streamlit_app.py  实验室
-notebooks/          00–08 课件
-fixtures/           真实数字小样本
-checkpoints/        CPU 预置 CNN 权重
-exercises/          学生填空；solutions/ 为参考答案
-tests/              快测（toy + fixture，不全量训练）
-docs/curriculum.md  课程大纲
-docs/teacher.md     90 分钟教师手册
+每次短训写到 `runs/<模型>_<时间戳>/`，对照页可以叠多条曲线。模型可选 `mlp` / `cnn` / `cnn_dropout`。
+
+## 命令行
+
+```bash
+python -m mnist_lab --help
+python -m mnist_lab lesson                          # 列出课件
+python -m mnist_lab train --tiny --epochs 3         # 真实小样本短训
+python -m mnist_lab train --subset 2048 --epochs 2  # 完整 MNIST 的课上演示
+python -m mnist_lab evaluate --tiny --split test    # 准确率 + 混淆矩阵
+python -m mnist_lab visualize --kind gradcam --tiny
+python -m mnist_lab quiz                            # 交互测验（13 题）
 ```
 
-## 运行测试
+`visualize --kind`：`curves` | `confusion` | `errors` | `samples` | `gradcam` | `saliency` | `features`。
+
+预测单张图时，若当前目录没有 `cnn2.pkl`，会自动用 `checkpoints/cnn_cpu.pt`（小样本短训，大约八成，不是论文数字）。白底照片会自动反色成 MNIST 的白字黑底。
+
+旧入口仍可用：`python main.py --mode train --tiny`。
+
+## 练习
+
+在 [exercises/](exercises/) 填空，**不要** `import mnist_lab` 或 `sklearn` 交现成答案。
+
+```bash
+pytest tests/test_exercises.py -v
+```
+
+空实现会 `NotImplementedError`。参考答案在 `exercises/solutions/`，请先自己写。
+
+## 测试
 
 ```bash
 pytest
 ```
 
-测试默认 **不下载 MNIST、不跑全量训练**。
+只用 toy 和仓库 fixture，**不下载完整 MNIST、不跑全量训练**。
 
-## 课程大纲
+## 目录
 
-见 [docs/curriculum.md](docs/curriculum.md)。
+```
+mnist_lab/           教学代码（中文注释）
+app/streamlit_app.py 实验室
+notebooks/           课件 00–08
+fixtures/            真实数字小样本
+checkpoints/         CPU 预置权重
+exercises/           学生填空
+tests/               快测
+docs/                大纲与教师手册
+outputs/  runs/      运行产物（已 gitignore）
+```
+
+重做小样本和权重：`PYTHONPATH=. python scripts/build_fixtures.py --n 256 --epochs 20`
+
+## 常见问题
+
+- **预测全错**：先看图是不是白底黑字却关掉了自动反色，再怀疑模型。
+- **没有桌面 / 远程服务器**：不要找 `cv2.imshow`，看 `outputs/` 里的 png。
+- **对照曲线只有一条**：旧版会覆盖同一目录；现在每次训练一个时间戳文件夹。
+- **`cnn2.pkl` 加载失败**：`build_model("cnn")` 与最初两层卷积结构相同，可以加载旧权重。
+
+本课不覆盖：线性回归、树模型、Transformer、多机多卡。
